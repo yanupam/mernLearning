@@ -1,4 +1,5 @@
-const express =require('express')
+const express =require('express');
+const z = require('zod');
 const app = express();
 app.use(express.json());
 //mongodb+srv://anupam:lucknow01@anupam.2pe6v1t.mongodb.net/
@@ -15,9 +16,15 @@ let dataStore = [
     }
 ];
 
+const schemaValidation = z.object({
+    username: z.string(),
+    password:z.string()
+});
+
 const authMiddleWare = (req,res,next)=>{
    try {
     const username = req.headers.username;
+    const response = schemaValidation.safeParse(req.body);
     console.log('AUTH');
      if(username !=='Anupam'){
     console.log('AUTHDone');
