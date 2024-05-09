@@ -3,36 +3,14 @@ const z = require('zod');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const jwtPassword = 'jwt-password';
-const {MONGODB_CONNECTION_STRING} = require('../mernLearning/constants/constants');
-const {MODEL_USER} = require('./modals/User');
+const {MONGODB_CONNECTION_STRING,USERS_TABLES} = require('../mernLearning/constants/constants');
+const {UserModal} = require('./modals/User');
 const app = express();
 app.use(express.json());
 
 mongoose.connect(`${MONGODB_CONNECTION_STRING}my-app`);
 
-const User = mongoose.model('users_tables',{
-    username: String,
-    password:String,
-    name:String,
-    age:Number
-
-});
-let dataStore = [
-    {   
-        id:1,
-        username:'anupam@yopmail.com',
-        password:'test@123',
-        name:'Anupam',
-        age:24
-    },
-    {
-        id:2,
-        username:'anuradha@yopmail.com',
-        password:'test@1234',
-        name:'Anuradha',
-        age:22
-    }
-];
+const User = mongoose.model(USERS_TABLES,UserModal);
 
 const schemaValidation = z.object({
     username: z.string(),
@@ -41,21 +19,7 @@ const schemaValidation = z.object({
     age:z.number().int()
 });
 
-const authMiddleWare = (req,res,next)=>{
-   try {
-    const username = req.headers.username;
-    const response = schemaValidation.safeParse(req.body);
-    console.log('AUTH');
-     if(username !=='Anupam'){
-    console.log('AUTHDone');
-        return res.status(401).json({ error: 'Unauthorized' });
-     }else{
-         next();
-     } 
-   } catch (error) {
-    res.status(401).json({ error: 'Invalid Token' });
-   }
-}
+
 
 const schemaValidationMiddleWare = (req,res,next)=>{
     const response = schemaValidation.safeParse(req.body);
@@ -67,24 +31,12 @@ const schemaValidationMiddleWare = (req,res,next)=>{
         next();
     }
 }
-const doUserExist = async({username,password})=>{
-//    const user = dataStore.find((user)=>{
-//         return user.username === username;
-//    })
-//    if(user){
-//     if(user.password===password){
-//        return true;
-//     }
-//    }else{
-//     return false;
-//    }
-
+const doUserExist = async({username})=>{
     const user =await User.findOne({username:username});
-    console.log('USER->'+user);
     if(user){return true}
     else{return false};
-
 };
+
 
 
 app.get('/auth',(req,res)=>{
@@ -103,10 +55,10 @@ app.get('/auth',(req,res)=>{
   
 })
 
-app.post('/signin',(req,res)=>{
+app.post('/signin',async(req,res)=>{
     const {username,password} = req.body;
-    const doUserEx = doUserExist({username,password});
-    if(!doUserEx){
+    const user =await User.findOne({username:username,password:password});
+    if(!user){
         res.status(403).json({
             'error':'Wrong credentials'
         });
@@ -121,10 +73,8 @@ app.post('/signin',(req,res)=>{
 
 app.post('/signup',schemaValidationMiddleWare,async(req,res)=>{
     const {username,password,name,age}= req.body;
-    
-   
     try {
-        const isUserInDB = doUserExist({username,password});
+        const isUserInDB = doUserExist({username});
         if(isUserInDB){
             throw new Error('user exists');
         }

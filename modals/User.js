@@ -10,5 +10,5 @@ const UserModal = {
 
 
 module.exports={
-    MODEL_USER : UserModal
+    UserModal
 }
